@@ -4,6 +4,10 @@ import com.skala.stock.dto.UserDto;
 import com.skala.stock.entity.User;
 import com.skala.stock.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,4 +54,32 @@ public class UserService {
                 .balance(user.getBalance())
                 .build();
     }
+
+        public List<UserDto> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+     // === 과제 2: 수정 ===
+    @Transactional
+    public UserDto updateUser(Long id, UserDto userDto) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다: " + id));
+
+        user.setPassword(userDto.getPassword());
+        user.setEmail(userDto.getEmail());
+        user.setBalance(userDto.getBalance());
+
+        return convertToDto(user);  // @Transactional 종료 시 DB 자동 반영(더티 체킹)
+    }
+
+    // === 과제 2: 삭제 ===
+    @Transactional
+    public void deleteUser(Long id) {
+        if (!userRepository.existsById(id)) {
+            throw new RuntimeException("사용자를 찾을 수 없습니다: " + id);
+        }
+        userRepository.deleteById(id);
+    }
+
 }

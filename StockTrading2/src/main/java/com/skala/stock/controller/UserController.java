@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
@@ -31,5 +31,30 @@ public class UserController {
     public ResponseEntity<UserDto> getUserById(@PathVariable Long id) {
         UserDto user = userService.getUserById(id);
         return ResponseEntity.ok(user);
+    }
+
+    @GetMapping
+    @Operation(summary = "전체 사용자 조회", description = "모든 사용자를 조회합니다")
+    public ResponseEntity<List<UserDto>> getAllUsers() {
+        List<UserDto> users = userService.getAllUsers();
+        return ResponseEntity.ok(users);
+    }
+
+    // === 과제 2: 수정 ===
+    @PutMapping("/{id}")
+    @Operation(summary = "사용자 수정", description = "ID로 사용자 정보를 수정합니다")
+    public ResponseEntity<UserDto> updateUser(
+            @PathVariable Long id,
+            @Valid @RequestBody UserDto userDto) {
+        UserDto updatedUser = userService.updateUser(id, userDto);
+        return ResponseEntity.ok(updatedUser);
+    }
+
+    // === 과제 2: 삭제 ===
+    @DeleteMapping("/{id}")
+    @Operation(summary = "사용자 삭제", description = "ID로 사용자를 삭제합니다")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        userService.deleteUser(id);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -39,6 +39,11 @@ public class StockService {
                 .orElseThrow(() -> new RuntimeException("주식을 찾을 수 없습니다: " + id));
         return convertToDto(stock);
     }
+    public StockDto getStockByCode(String code) {
+        Stock stock = stockRepository.findByCode(code)
+                .orElseThrow(() -> new RuntimeException("주식을 찾을 수 없습니다: " + code));
+        return convertToDto(stock);
+    }
 
     public List<StockDto> getAllStocks() {
         return stockRepository.findAll().stream()
@@ -55,4 +60,29 @@ public class StockService {
                 .previousPrice(stock.getPreviousPrice())
                 .build();
     }
+
+ // === 과제 1: 수정 ===
+    @Transactional
+    public StockDto updateStock(Long id, StockDto stockDto) {
+        Stock stock = stockRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("주식을 찾을 수 없습니다: " + id));
+
+        // 기존 엔티티의 값을 변경 (JPA가 트랜잭션 종료 시 자동 반영)
+        stock.setName(stockDto.getName());
+        stock.setCurrentPrice(stockDto.getCurrentPrice());
+        stock.setPreviousPrice(stockDto.getPreviousPrice());
+
+        return convertToDto(stock);
+    }
+
+    // === 과제 1: 삭제 ===
+    @Transactional
+    public void deleteStock(Long id) {
+        if (!stockRepository.existsById(id)) {
+            throw new RuntimeException("주식을 찾을 수 없습니다: " + id);
+        }
+        stockRepository.deleteById(id);
+    }
+
+
 }
