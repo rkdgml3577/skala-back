@@ -25,9 +25,15 @@ public class PortfolioService {
                 .collect(Collectors.toList());
     }
 
-    // addToPortfolio, updatePortfolio, removeFromPortfolio 메서드는 
+    // addToPortfolio, updatePortfolio, removeFromPortfolio 메서드는
     // executeTrade() 제거로 인해 더 이상 사용되지 않습니다.
     // 교육생 실습을 위해 제거되었습니다.
+
+    public PortfolioDto getUserStock(Long userId, Long stockId) {
+        Portfolio p = portfolioRepository.findByUserIdAndStockId(userId, stockId)
+                .orElseThrow(() -> new RuntimeException("보유 없음"));
+        return convertToDto(p);
+    }
 
     private PortfolioDto convertToDto(Portfolio portfolio) {
         Stock stock = portfolio.getStock();

@@ -42,4 +42,11 @@ public class TransactionService {
                 .createdAt(transaction.getCreatedAt())
                 .build();
     }
+
+    @Transactional(readOnly = true)
+    public TransactionDto getTransactionById(Long id) {
+        Transaction transaction = transactionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("거래를 찾을 수 없습니다: " + id));
+        return convertToDto(transaction);
+    }
 }

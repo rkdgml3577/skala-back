@@ -1,6 +1,90 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.skala.stock.mapper.StockMapper">
-    <!-- StockMapper의 모든 쿼리가 제거되었습니다. -->
-    <!-- 교육생 실습을 위해 이 매퍼는 삭제되었습니다. -->
+
+    <!-- 4번: 총 주식 평가액 (총자산 = 이것 + user.balance) -->
+    <select id="getTotalStockValue" resultType="java.lang.Long">
+        SELECT COALESCE(SUM(p.quantity * s.current_price), 0)
+        FROM portfolios p 
+        JOIN stocks s ON p.stock_id = s.id
+        WHERE p.user_id = #{userId}
+    </select>
+
+    <!-- 5번: 총 매수금액 (평균가 기준) -->
+    <select id="getTotalBuyAmount" resultType="java.lang.Long">
+        SELECT COALESCE(SUM(p.quantity * p.average_price), 0)
+        FROM portfolios p 
+        WHERE p.user_id = #{userId}
+    </select>
+
+    <!-- 6번: 거래 통계 (BUY/SELL별 건수·총액) -->
+    <!-- 반환 타입이 List<Map>일 경우 resultType은 단일 요소인 map을 지정합니다 -->
+    <select id="getTradeStatistics" resultType="java.util.Map">
+        SELECT type, 
+               COUNT(*) AS count, 
+               COALESCE(SUM(total_amount), 0) AS totalAmount
+        FROM transactions 
+        WHERE user_id = #{userId} 
+        GROUP BY type
+    </select>
+
+    <!-- 7번: 일별 거래 내역 -->
+    <select id="getDailyTransactions" resultType="java.util.Map">
+        SELECT CAST(transaction_date AS DATE) AS date,
+               COUNT(*) AS count, 
+               COALESCE(SUM(total_amount), 0) AS totalAmount
+        FROM transactions 
+        WHERE user_id = #{userId}
+        GROUP BY CAST(transaction_date AS DATE) 
+        ORDER BY date
+    </select>
+
+    <!-- 1번: 포트폴리오 평가 손익 -->
+    <select id="getPortfolioProfit" resultType="java.util.Map">
+        SELECT s.code AS stockCode, 
+               s.name AS stockName,
+               p.quantity, 
+               p.average_price AS averagePrice,
+               s.current_price AS currentPrice,
+               (p.quantity * s.current_price) AS totalValue,
+               (p.quantity * s.current_price - p.quantity * p.average_price) AS profitLoss
+        FROM portfolios p 
+        JOIN stocks s ON p.stock_id = s.id
+        WHERE p.user_id = #{userId}
+    </select>
+
+    <!-- 2번: 거래 내역 상세 (전체) -->
+    <select id="getTransactionDetails" resultType="java.util.Map">
+        SELECT t.id, 
+               u.username, 
+               s.code AS stockCode, 
+               s.name AS stockName,
+               t.type, 
+               t.quantity, 
+               t.price, 
+               t.total_amount AS totalAmount,
+               t.transaction_date AS transactionDate
+        FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        JOIN stocks s ON t.stock_id = s.id
+        WHERE t.user_id = #{userId}
+        ORDER BY t.transaction_date DESC
+    </select>
+
+    <!-- 3번 & 8번: 특정 주식 거래 내역 -->
+    <select id="getStockTransactions" resultType="java.util.Map">
+        SELECT t.id, 
+               s.code AS stockCode, 
+               s.name AS stockName,
+               t.type, 
+               t.quantity, 
+               t.price, 
+               t.total_amount AS totalAmount,
+               t.transaction_date AS transactionDate
+        FROM transactions t
+        JOIN stocks s ON t.stock_id = s.id
+        WHERE t.user_id = #{userId} AND t.stock_id = #{stockId}
+        ORDER BY t.transaction_date DESC
+    </select>
+
 </mapper>
