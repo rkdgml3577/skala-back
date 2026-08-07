@@ -3,6 +3,8 @@ package com.sk.skala.shopapi.controller;
 import com.sk.skala.shopapi.data.Customer;
 import com.sk.skala.shopapi.data.Response;
 import com.sk.skala.shopapi.service.CustomerService;
+
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,5 +30,10 @@ public class CustomerController {
     @PostMapping
     public Response createCustomer(@RequestBody Customer customer) {
         return customerService.createCustomer(customer);
+    }
+
+    @PostMapping("/login")
+    public Response login(@RequestBody Customer customer, HttpServletResponse httpResponse) {
+        return customerService.loginCustomer(customer, httpResponse);
     }
 }

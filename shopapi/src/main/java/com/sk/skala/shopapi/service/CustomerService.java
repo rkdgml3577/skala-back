@@ -5,6 +5,9 @@ import com.sk.skala.shopapi.exception.Error;
 import com.sk.skala.shopapi.exception.ResponseException;
 import com.sk.skala.shopapi.repository.CustomerRepository;
 import com.sk.skala.shopapi.repository.OrderItemRepository;
+import com.sk.skala.shopapi.tools.SessionHandler;
+
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -21,6 +24,7 @@ public class CustomerService {
 
     private final CustomerRepository customerRepository;
     private final OrderItemRepository orderItemRepository;
+    private final SessionHandler sessionHandler;
 
     // 전체 고객 조회 (페이징)
     public Response getAllCustomers(int offset, int count) {
@@ -29,6 +33,29 @@ public class CustomerService {
 
         Response response = new Response();
         response.setSuccess(page.getContent());
+        return response;
+    }
+
+    // 로그인
+    public Response loginCustomer(Customer loginRequest, HttpServletResponse httpResponse) {
+        // 입력값 검증
+        if (loginRequest.getCustomerId() == null || loginRequest.getCustomerPassword() == null) {
+            throw new ResponseException(Error.NOT_AUTHENTICATED, "ID와 비밀번호를 입력하세요");
+        }
+        // 고객 조회
+        Customer customer = customerRepository.findById(loginRequest.getCustomerId())
+                .orElseThrow(() -> new ResponseException(Error.DATA_NOT_FOUND, "고객을 찾을 수 없습니다"));
+        // 비밀번호 검증
+        if (!customer.getCustomerPassword().equals(loginRequest.getCustomerPassword())) {
+            throw new ResponseException(Error.NOT_AUTHENTICATED, "비밀번호가 틀렸습니다");
+        }
+        // 인증 성공 → 토큰 발급 (쿠키에 담김)
+        sessionHandler.storeAccessToken(httpResponse, customer.getCustomerId());
+
+        // 비밀번호는 응답에서 제거
+        customer.setCustomerPassword(null);
+        Response response = new Response();
+        response.setSuccess(customer);
         return response;
     }
 
