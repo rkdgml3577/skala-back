@@ -6,6 +6,7 @@ import org.aspectj.lang.annotation.Aspect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import java.util.Arrays;
 
 @Aspect
 @Component
@@ -17,16 +18,22 @@ public class LoggingAspect {
     @Around("execution(* com.sk.skala.shopapi.controller..*(..))")
     public Object logApi(ProceedingJoinPoint joinPoint) throws Throwable {
         String method = joinPoint.getSignature().toShortString();
+        Object[] args = joinPoint.getArgs(); // 파라미터 추출
         long start = System.currentTimeMillis();
 
-        log.info("▶ API 호출 시작: {}", method);
+        log.info("▶ API 호출 시작: {} | 요청 데이터: {}", method, Arrays.toString(args));
         try {
-            Object result = joinPoint.proceed();   // 실제 컨트롤러 실행
+            Object result = joinPoint.proceed();
             long elapsed = System.currentTimeMillis() - start;
-            log.info("◀ API 호출 완료: {} ({}ms)", method, elapsed);
+
+            if (elapsed > 200) {
+                log.warn("⚠ API 지연 발생: {} ({}ms)", method, elapsed);
+            } else {
+                log.info("◀ API 호출 완료: {} ({}ms)", method, elapsed);
+            }
             return result;
         } catch (Exception e) {
-            log.error("✖ API 호출 실패: {} - {}", method, e.getMessage());
+            log.error("✖ API 호출 실패: {} | 에러: {}", method, e.getMessage());
             throw e;
         }
     }

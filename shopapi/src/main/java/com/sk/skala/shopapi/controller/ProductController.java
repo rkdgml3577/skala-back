@@ -15,8 +15,10 @@ public class ProductController {
 
     @GetMapping
     public Response getAllProducts(
+        
             @RequestParam(defaultValue = "0") int offset,
             @RequestParam(defaultValue = "10") int count) {
+                
         return productService.getAllProducts(offset, count);
     }
 
