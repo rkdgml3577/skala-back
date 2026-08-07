@@ -1,11 +1,16 @@
 package com.sk.skala.shopapi.controller;
 
 import com.sk.skala.shopapi.data.Customer;
+import com.sk.skala.shopapi.data.OrderRequest;
 import com.sk.skala.shopapi.data.Response;
+import com.sk.skala.shopapi.exception.ResponseException;
 import com.sk.skala.shopapi.service.CustomerService;
+import com.sk.skala.shopapi.tools.SessionHandler;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import com.sk.skala.shopapi.exception.Error;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -14,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class CustomerController {
 
     private final CustomerService customerService;
+    private final SessionHandler sessionHandler;
 
     @GetMapping
     public Response getAllCustomers(
@@ -35,5 +41,24 @@ public class CustomerController {
     @PostMapping("/login")
     public Response login(@RequestBody Customer customer, HttpServletResponse httpResponse) {
         return customerService.loginCustomer(customer, httpResponse);
+    }
+
+    @PostMapping("/order")
+    public Response order(@RequestBody OrderRequest request, HttpServletRequest httpRequest) {
+        // JWT 쿠키에서 고객 식별
+        String customerId = sessionHandler.getCustomerId(httpRequest);
+        if (customerId == null) {
+            throw new ResponseException(Error.NOT_AUTHENTICATED, "로그인이 필요합니다");
+        }
+        return customerService.placeOrder(customerId, request);
+    }
+
+    @PostMapping("/cancel")
+    public Response cancel(@RequestBody OrderRequest request, HttpServletRequest httpRequest) {
+        String customerId = sessionHandler.getCustomerId(httpRequest);
+        if (customerId == null) {
+            throw new ResponseException(Error.NOT_AUTHENTICATED, "로그인이 필요합니다");
+        }
+        return customerService.cancelOrder(customerId, request);
     }
 }
