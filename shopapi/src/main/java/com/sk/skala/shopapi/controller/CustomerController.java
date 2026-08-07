@@ -61,4 +61,28 @@ public class CustomerController {
         }
         return customerService.cancelOrder(customerId, request);
     }
+
+    // ① 이름으로 조회
+    @GetMapping("/name/{customerName}")
+    public Response getCustomerByName(@PathVariable String customerName) {
+        return customerService.getCustomerByName(customerName);
+    }
+
+    // ② 정보 변경
+    @PutMapping
+    public Response updateCustomer(@RequestBody Customer customer) {
+        return customerService.updateCustomer(customer);
+    }
+
+    // ③ 삭제
+    @DeleteMapping("/{customerId}")
+    public Response deleteCustomer(@PathVariable String customerId) {
+        return customerService.deleteCustomer(customerId);
+    }
+
+    // ④ 고객의 상품 목록
+    @GetMapping("/{customerId}/products")
+    public Response getCustomerProducts(@PathVariable String customerId) {
+        return customerService.getCustomerProducts(customerId);
+    }
 }

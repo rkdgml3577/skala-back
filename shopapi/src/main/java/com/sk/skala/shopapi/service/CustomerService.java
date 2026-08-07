@@ -184,4 +184,62 @@ public class CustomerService {
         response.setSuccess(saved);
         return response;
     }
+
+    public Response getCustomerByName(String customerName) {
+        Customer customer = customerRepository.findByCustomerName(customerName)
+                .orElseThrow(() -> new ResponseException(Error.DATA_NOT_FOUND, "고객을 찾을 수 없습니다"));
+        customer.setCustomerPassword(null);
+        Response response = new Response();
+        response.setSuccess(customer);
+        return response;
+    }
+
+    public Response updateCustomer(Customer customer) {
+        Customer existing = customerRepository.findById(customer.getCustomerId())
+                .orElseThrow(() -> new ResponseException(Error.DATA_NOT_FOUND, "고객을 찾을 수 없습니다"));
+
+        // 비밀번호·포인트만 변경 (ID는 식별자라 변경 안 함)
+        if (customer.getCustomerPassword() != null) {
+            existing.setCustomerPassword(customer.getCustomerPassword());
+        }
+        if (customer.getCustomerPoint() != null) {
+            existing.setCustomerPoint(customer.getCustomerPoint());
+        }
+        Customer saved = customerRepository.save(existing);
+        saved.setCustomerPassword(null);
+
+        Response response = new Response();
+        response.setSuccess(saved);
+        return response;
+    }
+
+    public Response deleteCustomer(String customerId) {
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new ResponseException(Error.DATA_NOT_FOUND, "고객을 찾을 수 없습니다"));
+        customerRepository.delete(customer);
+
+        Response response = new Response();
+        response.setSuccess("삭제 완료: " + customerId);
+        return response;
+    }
+
+    @Transactional(readOnly = true)
+    public Response getCustomerProducts(String customerId) {
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new ResponseException(Error.DATA_NOT_FOUND, "고객을 찾을 수 없습니다"));
+
+        List<OrderItem> orderItems = orderItemRepository.findByCustomer_CustomerId(customerId);
+        List<OrderItemDto> products = orderItems.stream()
+                .map(item -> OrderItemDto.builder()
+                        .productId(item.getProduct().getId())
+                        .productName(item.getProduct().getProductName())
+                        .productPrice(item.getProduct().getProductPrice())
+                        .quantity(item.getQuantity())
+                        .build())
+                .collect(Collectors.toList());
+
+        Response response = new Response();
+        response.setSuccess(products);
+        return response;
+    }
 }

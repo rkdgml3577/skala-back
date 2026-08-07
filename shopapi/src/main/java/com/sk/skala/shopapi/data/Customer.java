@@ -14,7 +14,7 @@ public class Customer {
 
     @Id
     private String customerId;   // ★ ID가 문자열 (자동증가 아님, 직접 지정)
-
+    private String customerName;
     private String customerPassword;
     private Double customerPoint;   // 보유 포인트
 
