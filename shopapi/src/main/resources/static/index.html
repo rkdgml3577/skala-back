@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SKALA 온라인 쇼핑몰 — API 테스트</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --panel: #171a23;
+    --panel-2: #1e222d;
+    --line: #2a2f3c;
+    --ink: #e8eaf0;
+    --muted: #8b93a7;
+    --accent: #6c8cff;
+    --accent-2: #37c98b;
+    --warn: #e0a03a;
+    --danger: #e0574a;
+    --mono: 'SF Mono', 'Menlo', 'Consolas', monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+    line-height: 1.5;
+  }
+  header {
+    padding: 28px 32px 20px;
+    border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, #141824, #0f1117);
+  }
+  header h1 { margin: 0 0 4px; font-size: 22px; letter-spacing: -0.3px; }
+  header p { margin: 0; color: var(--muted); font-size: 13px; }
+  .base-config {
+    margin-top: 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .base-config label { font-size: 12px; color: var(--muted); }
+  .base-config input {
+    background: var(--panel-2); border: 1px solid var(--line); color: var(--ink);
+    padding: 6px 10px; border-radius: 6px; font-family: var(--mono); font-size: 12px; width: 240px;
+  }
+  .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 0; min-height: calc(100vh - 130px); }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+  .left { padding: 24px 32px; overflow-y: auto; }
+  .right {
+    padding: 24px 32px; background: var(--panel);
+    border-left: 1px solid var(--line);
+    position: sticky; top: 0; height: calc(100vh - 130px); overflow-y: auto;
+  }
+  @media (max-width: 900px) { .right { position: static; height: auto; } }
+
+  .step { margin-bottom: 26px; }
+  .step-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+  .step-num {
+    font-family: var(--mono); font-size: 12px; color: var(--accent);
+    border: 1px solid var(--accent); border-radius: 5px; padding: 1px 7px; flex-shrink: 0;
+  }
+  .step-title { font-size: 15px; font-weight: 600; }
+  .step-desc { font-size: 12px; color: var(--muted); margin: 0 0 10px; }
+
+  .fields { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .fields input {
+    background: var(--panel-2); border: 1px solid var(--line); color: var(--ink);
+    padding: 8px 10px; border-radius: 6px; font-size: 13px; width: 130px;
+  }
+  .fields input::placeholder { color: #5a6072; }
+
+  button.api {
+    border: none; border-radius: 7px; padding: 9px 16px; font-size: 13px; font-weight: 600;
+    cursor: pointer; color: #fff; transition: transform .05s, filter .15s;
+  }
+  button.api:active { transform: translateY(1px); }
+  button.api:hover { filter: brightness(1.12); }
+  .m-get { background: #2f6fed; }
+  .m-post { background: var(--accent-2); }
+  .m-put { background: var(--warn); }
+  .m-delete { background: var(--danger); }
+  .method-tag {
+    font-family: var(--mono); font-size: 10px; opacity: .85; margin-right: 6px;
+  }
+
+  .group-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--muted); margin: 8px 0 14px; padding-bottom: 6px; border-bottom: 1px solid var(--line);
+  }
+
+  .right h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 0 0 12px; }
+  .resp-meta { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; font-family: var(--mono); font-size: 12px; }
+  .status-pill { padding: 2px 9px; border-radius: 5px; font-weight: 700; }
+  .s-ok { background: rgba(55,201,139,.15); color: var(--accent-2); }
+  .s-err { background: rgba(224,87,74,.15); color: var(--danger); }
+  .s-idle { background: var(--panel-2); color: var(--muted); }
+  pre.resp {
+    background: #0b0d13; border: 1px solid var(--line); border-radius: 8px;
+    padding: 16px; font-family: var(--mono); font-size: 12.5px; color: #cdd3e0;
+    white-space: pre-wrap; word-break: break-word; margin: 0; min-height: 200px;
+  }
+  .url-echo { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-bottom: 8px; word-break: break-all; }
+  .hint { font-size: 11px; color: var(--warn); margin-top: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>SKALA 온라인 쇼핑몰 — API 테스트 콘솔</h1>
+  <p>회원가입 → 로그인(JWT) → 상품조회 → 주문 → 확인 → 취소 흐름을 버튼으로 테스트합니다.</p>
+  <div class="base-config">
+    <label>Base URL</label>
+    <input id="baseUrl" value="http://localhost:8080">
+    <span style="font-size:11px;color:var(--muted)">쿠키(JWT) 자동 포함 · credentials: include</span>
+  </div>
+</header>
+
+<div class="layout">
+  <div class="left">
+
+    <div class="group-label">상품 (Product)</div>
+
+    <div class="step">
+      <div class="step-head"><span class="step-num">4-a</span><span class="step-title">상품 등록</span></div>
+      <p class="step-desc">판매할 상품을 추가합니다. 여러 개 등록해 보세요.</p>
+      <div class="fields">
+        <input id="p_name" placeholder="상품명 (무선마우스)" value="무선마우스">
+        <input id="p_price" type="number" placeholder="가격 (15000)" value="15000">
+      </div>
+      <button class="api m-post" onclick="createProduct()"><span class="method-tag">POST</span>상품 등록</button>
+    </div>
+
+    <div class="step">
+      <div class="step-head"><span class="step-num">4-b</span><span class="step-title">상품 전체 조회 (페이징)</span></div>
+      <p class="step-desc">등록된 상품 목록을 페이지 단위로 조회합니다.</p>
+      <button class="api m-get" onclick="getProducts()"><span class="method-tag">GET</span>상품 목록</button>
+    </div>
+
+    <div class="group-label">고객 (Customer)</div>
+
+    <div class="step">
+      <div class="step-head"><span class="step-num">5-a</span><span class="step-title">회원가입</span></div>
+      <p class="step-desc">고객을 등록합니다. 초기 포인트 100만이 자동 지급됩니다.</p>
+      <div class="fields">
+        <input id="c_id" placeholder="고객ID (skala01)" value="skala01">
+        <input id="c_pw" placeholder="비밀번호 (pw1234)" value="pw1234">
+      </div>
+      <button class="api m-post" onclick="createCustomer()"><span class="method-tag">POST</span>회원가입</button>
+    </div>
+
+    <div class="step">
+      <div class="step-head"><span class="step-num">6</span><span class="step-title">로그인 (JWT 발급)</span></div>
+      <p class="step-desc">로그인 성공 시 JWT 토큰이 쿠키(bff-access)에 저장됩니다.</p>
+      <div class="fields">
+        <input id="l_id" placeholder="고객ID" value="skala01">
+        <input id="l_pw" placeholder="비밀번호" value="pw1234">
+      </div>
+      <button class="api m-post" onclick="login()"><span class="method-tag">POST</span>로그인</button>
+    </div>
+
+    <div class="step">
+      <div class="step-head"><span class="step-num">5-b</span><span class="step-title">내 정보 · 주문 확인</span></div>
+      <p class="step-desc">고객 정보와 주문한 상품 목록을 조회합니다.</p>
+      <div class="fields">
+        <input id="g_id" placeholder="고객ID" value="skala01">
+      </div>
+      <button class="api m-get" onclick="getCustomer()"><span class="method-tag">GET</span>내 정보 조회</button>
+    </div>
+
+    <div class="group-label">주문 (Order) — 로그인 필요</div>
+
+    <div class="step">
+      <div class="step-head"><span class="step-num">7-a</span><span class="step-title">상품 주문 (포인트 차감)</span></div>
+      <p class="step-desc">productId·수량으로 주문합니다. 포인트가 차감됩니다. (로그인 필수)</p>
+      <div class="fields">
+        <input id="o_pid" type="number" placeholder="상품ID (1)" value="1">
+        <input id="o_qty" type="number" placeholder="수량 (2)" value="2">
+      </div>
+      <button class="api m-post" onclick="order()"><span class="method-tag">POST</span>주문하기</button>
+    </div>
+
+    <div class="step">
+      <div class="step-head"><span class="step-num">7-b</span><span class="step-title">주문 취소 (포인트 환급)</span></div>
+      <p class="step-desc">주문을 취소합니다. 포인트가 환급되고 수량이 차감됩니다.</p>
+      <div class="fields">
+        <input id="x_pid" type="number" placeholder="상품ID (1)" value="1">
+        <input id="x_qty" type="number" placeholder="수량 (1)" value="1">
+      </div>
+      <button class="api m-post" onclick="cancel()"><span class="method-tag">POST</span>주문 취소</button>
+    </div>
+
+    <div class="group-label">예외 처리 테스트 (차별화 캡처용)</div>
+
+    <div class="step">
+      <div class="step-head"><span class="step-num">8</span><span class="step-title">에러 상황 확인</span></div>
+      <p class="step-desc">전역 예외 처리가 상태코드(404/400)를 올바로 반환하는지 확인합니다.</p>
+      <div class="fields">
+        <button class="api m-get" onclick="notFound()"><span class="method-tag">GET</span>없는 상품 → 404</button>
+        <button class="api m-post" onclick="overOrder()"><span class="method-tag">POST</span>포인트 부족 → 400</button>
+      </div>
+      <p class="hint">※ 로그인 없이 주문을 눌러 401(로그인 필요)도 확인할 수 있습니다.</p>
+    </div>
+
+  </div>
+
+  <div class="right">
+    <h2>응답 (Response)</h2>
+    <div class="resp-meta">
+      <span id="method" style="color:var(--muted)">—</span>
+      <span id="status" class="status-pill s-idle">대기 중</span>
+      <span id="time" style="color:var(--muted)"></span>
+    </div>
+    <div class="url-echo" id="urlEcho">버튼을 눌러 API를 호출하세요.</div>
+    <pre class="resp" id="output">// 여기에 응답이 표시됩니다.</pre>
+  </div>
+</div>
+
+<script>
+  const base = () => document.getElementById('baseUrl').value.replace(/\/$/, '');
+  const val = id => document.getElementById(id).value;
+  const numVal = id => Number(document.getElementById(id).value);
+
+  function render(method, url, status, ok, body, ms) {
+    document.getElementById('method').textContent = method;
+    const s = document.getElementById('status');
+    s.textContent = status;
+    s.className = 'status-pill ' + (ok ? 's-ok' : 's-err');
+    document.getElementById('time').textContent = ms != null ? ms + 'ms' : '';
+    document.getElementById('urlEcho').textContent = method + ' ' + url;
+    let text;
+    try { text = typeof body === 'string' ? body : JSON.stringify(body, null, 2); }
+    catch { text = String(body); }
+    document.getElementById('output').textContent = text;
+  }
+
+  async function call(method, path, bodyObj) {
+    const url = base() + path;
+    const opts = {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include'   // 쿠키(JWT) 포함
+    };
+    if (bodyObj !== undefined) opts.body = JSON.stringify(bodyObj);
+    const t0 = performance.now();
+    try {
+      const res = await fetch(url, opts);
+      const ms = Math.round(performance.now() - t0);
+      let data;
+      const ct = res.headers.get('content-type') || '';
+      data = ct.includes('application/json') ? await res.json() : await res.text();
+      render(method, url, res.status + ' ' + res.statusText, res.ok, data, ms);
+    } catch (e) {
+      const ms = Math.round(performance.now() - t0);
+      render(method, url, '요청 실패', false,
+        '네트워크 오류: ' + e.message + '\n\n※ 서버가 켜져 있는지, CORS 설정이 되어 있는지 확인하세요.', ms);
+    }
+  }
+
+  // 상품
+  function createProduct() {
+    call('POST', '/api/products', { productName: val('p_name'), productPrice: numVal('p_price') });
+  }
+  function getProducts() { call('GET', '/api/products?offset=0&count=10'); }
+
+  // 고객
+  function createCustomer() {
+    call('POST', '/api/customers', { customerId: val('c_id'), customerPassword: val('c_pw') });
+  }
+  function login() {
+    call('POST', '/api/customers/login', { customerId: val('l_id'), customerPassword: val('l_pw') });
+  }
+  function getCustomer() { call('GET', '/api/customers/' + encodeURIComponent(val('g_id'))); }
+
+  // 주문
+  function order() {
+    call('POST', '/api/customers/order', { productId: numVal('o_pid'), quantity: numVal('o_qty') });
+  }
+  function cancel() {
+    call('POST', '/api/customers/cancel', { productId: numVal('x_pid'), quantity: numVal('x_qty') });
+  }
+
+  // 예외 테스트
+  function notFound() { call('GET', '/api/products/999'); }
+  function overOrder() {
+    call('POST', '/api/customers/order', { productId: 1, quantity: 999999 });
+  }
+</script>
+</body>
+</html>
