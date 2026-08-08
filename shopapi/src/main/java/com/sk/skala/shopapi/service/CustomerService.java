@@ -27,6 +27,7 @@ public class CustomerService {
     private final OrderItemRepository orderItemRepository;
     private final ProductRepository productRepository;  
     private final SessionHandler sessionHandler;
+    private final NotificationService notificationService;
 
 
     // 전체 고객 조회 (페이징)
@@ -92,6 +93,7 @@ public class CustomerService {
                                 new OrderItem(customer, product, request.getQuantity()))
                 );
 
+        notificationService.sendOrderCompleteNotification(customerId);        
         Response response = new Response();
         response.setSuccess("주문 완료. 남은 포인트: " + customer.getCustomerPoint());
         return response;
@@ -242,4 +244,5 @@ public class CustomerService {
         response.setSuccess(products);
         return response;
     }
+
 }
