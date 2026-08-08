@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.Cacheable;
 
 @Service
 @RequiredArgsConstructor
@@ -18,6 +19,8 @@ public class ProductService {
     private final ProductRepository productRepository;
 
     // 전체 상품 조회 (페이징)
+    // 캐싱 적용: 동일한 offset과 count 요청 시 캐시된 결과 반환
+    @Cacheable(value = "products", key = "'page:' + #offset + ':size:' + #count")
     public Response getAllProducts(int offset, int count) {
         Pageable pageable = PageRequest.of(offset, count);
         Page<Product> page = productRepository.findAll(pageable);
@@ -80,4 +83,5 @@ public class ProductService {
         response.setSuccess("삭제 완료: " + id);
         return response;
     }
+    
 }
