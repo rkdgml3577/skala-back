@@ -6,7 +6,11 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "order_item")
+@Table(name = "order_item",
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"customer_id", "product_id"}) // 2줄 생성 원천 차단
+    })
+
 @Getter
 @Setter
 @NoArgsConstructor
